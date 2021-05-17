@@ -1,3 +1,8 @@
+#Indoor Location & Navigationコンペにて実際に作成したMLPのコードです。
+#別コードにて、数千次元あった特徴量を次元削除&クラスタリングし、新規にデータセットを作成。
+#本コードにて、作成したデータセットをMLPで学習しています。
+
+
 #import
 import numpy as np
 import pandas as pd
@@ -8,16 +13,6 @@ from keras.layers.normalization import BatchNormalization
 from tensorflow.keras.models import Model
 from keras.callbacks import EarlyStopping
 from tensorflow.keras.utils import plot_model
-
-from tqdm import tqdm
-
-import warnings
-warnings.filterwarnings('ignore')
-
-pd.set_option('display.max_columns', 100)
-pd.options.display.precision = 30
-np.set_printoptions(precision=20)
-np.set_printoptions(threshold=np.inf)
 
 #set valiable
 
@@ -145,7 +140,7 @@ for building in used_buildings:
     
     all_preds.append(test_preds)
 
-#make prediction
+#make submission
 submission_file=pd.concat(all_preds)
 
 submission_file.set_index('site_path_timestamp',inplace=True)
