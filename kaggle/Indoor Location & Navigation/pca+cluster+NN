@@ -1,0 +1,161 @@
+#import
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import StratifiedKFold
+
+from keras.layers import Input,Dense, Activation,Embedding, Flatten,Concatenate
+from keras.layers.normalization import BatchNormalization
+from tensorflow.keras.models import Model
+from keras.callbacks import EarlyStopping
+from tensorflow.keras.utils import plot_model
+
+from tqdm import tqdm
+
+import warnings
+warnings.filterwarnings('ignore')
+
+pd.set_option('display.max_columns', 100)
+pd.options.display.precision = 30
+np.set_printoptions(precision=20)
+np.set_printoptions(threshold=np.inf)
+
+#set valiable
+
+SEED = 42
+N_SPLITS = 8
+PCA_DIM=250
+early_stopping=EarlyStopping(patience=35)
+
+SENSORCOLS = ['acce_x', 'acce_y', 'acce_z', 
+        'magn_x', 'magn_y', 'magn_z',
+        'gyro_x', 'gyro_y', 'gyro_z', 
+        'ahrs_x', 'ahrs_y', 'ahrs_z']
+
+MAGNCOLS=['magn_x','magn_y','magn_z']
+
+NOT_MAGNCOLS=[s for s in SENSORCOLS if s not in MAGNCOLS]
+
+#configure NN
+def create_fun_model(features):
+    c_num=features['cluster'].nunique()
+    f_num=features['floor'].max()+1
+    
+    input_wifi=Input(shape=(PCA_DIM,),name="input_wifi")
+    dense_wifi = Dense(256)(input_wifi)
+    
+    input_floor=Input(shape=(1,),name="input_floor")
+    embed_floor= Embedding(f_num, f_num-1)(input_floor)
+    flatt_floor = Flatten()(embed_floor)
+    
+    input_cluster=Input(shape=(1,),name="input_cluster")
+    embed_cluster= Embedding(c_num, c_num-1)(input_cluster)
+    flatt_cluster = Flatten()(embed_cluster)
+    
+    x = Concatenate(axis=1)([flatt_cluster,flatt_floor,dense_wifi])
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    
+    x = Dense(128)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    
+    x = Dense(64)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    
+    x = Dense(32)(x)
+    x = BatchNormalization()(x)
+    x = Activation("relu")(x)
+    
+    output_layer = Dense(2, name='xy')(x)
+    
+    model = Model([input_wifi, input_floor, input_cluster], output_layer)
+    
+    model.compile(optimizer='adam',loss='mse')
+    return model
+
+#target_buildings
+ssubm = pd.read_csv('../input/simple-99-accurate-floor-model/submission.csv')
+ssubm_df = ssubm["site_path_timestamp"].apply(lambda x: pd.Series(x.split("_")))
+used_buildings = sorted(ssubm_df[0].value_counts().index.tolist())
+
+#make a instance of StratifiedKFold
+kf = StratifiedKFold(n_splits=N_SPLITS,shuffle=True,random_state=SEED)
+
+#prediction
+all_preds=[]
+for building in used_buildings:
+    print(building)
+    train_data=pd.read_csv(f'../input/pca-cluster-wifi-sensor-datasets/{building}_ws_train.csv')
+    train_data['cluster']=train_data['cluster'].astype('category')
+    train_data['floor']=train_data['floor']-train_data['floor'].min()
+    
+    test_data=pd.read_csv(f'../input/pca-cluster-wifi-sensor-datasets/{building}_ws_test.csv')
+    test_data['cluster']=test_data['cluster'].astype('category')
+    test_data['floor']=test_data['floor']-test_data['floor'].min()
+
+    #trainデータ処理
+    features=train_data.drop(['x','y','path','timestamp',*SENSORCOLS],axis=1)
+    target_xy=train_data[['x','y']]
+
+    #testデータ処理
+    test_features=test_data.drop(['site_path_timestamp','site','path','timestamp',*SENSORCOLS],axis=1)
+
+    test_pred_x, test_pred_y = 0,0
+    for fold,[trx,vax] in enumerate(kf.split(np.arange(len(features)),features['cluster'])):
+        print(f'{fold+1}Fold')
+        
+        #train_input
+        train_features=features.iloc[trx,:]
+        input_tr_wifi=train_features.iloc[:,:250]
+        input_tr_floor=train_features['floor']
+        input_tr_cluster=train_features['cluster']
+        input_tr_features=[input_tr_wifi,input_tr_floor,input_tr_cluster]
+        
+        train_target_xy=target_xy.iloc[trx,:]
+        
+        #valid_input
+        valid_features=features.iloc[vax,:]
+        input_va_wifi=valid_features.iloc[:,:250]
+        input_va_floor=valid_features['floor']
+        input_va_cluster=valid_features['cluster']
+        input_va_features=[input_va_wifi,input_va_floor,input_va_cluster]
+        
+        valid_target_xy=target_xy.iloc[vax,:]
+        
+        #test_input
+        input_te_wifi=test_features.iloc[:,:250]
+        input_te_floor=test_features['floor']
+        input_te_cluster=test_features['cluster']
+        input_te_features=[input_te_wifi,input_te_floor,input_te_cluster]
+
+        #fit
+        model=create_fun_model(features)
+        history=model.fit(x=input_tr_features, y=train_target_xy,
+                          shuffle=True,epochs=200, batch_size=100,verbose=2,
+                          validation_data=(input_va_features,valid_target_xy),
+                          callbacks=[early_stopping])
+
+        #predict
+        pred=model.predict(input_te_features)
+        test_pred_x += pred[:,0]/N_SPLITS
+        test_pred_y += pred[:,1]/N_SPLITS
+
+    test_preds=pd.DataFrame()
+    test_preds['site_path_timestamp']=test_data['site_path_timestamp']
+    test_preds['floor']=test_data['floor']
+    test_preds['x']=test_pred_x
+    test_preds['y']=test_pred_y
+    
+    all_preds.append(test_preds)
+
+#make prediction
+submission_file=pd.concat(all_preds)
+
+submission_file.set_index('site_path_timestamp',inplace=True)
+submission_file = submission_file.reindex(index=ssubm['site_path_timestamp'])
+#(NNを学習する際、floorの値を修正しているので、元の値に戻す。)
+submission_file['floor']=ssubm['floor']
+
+submission_file=submission_file[['floor','x','y']]
+submission_file.to_csv('submission.csv')
