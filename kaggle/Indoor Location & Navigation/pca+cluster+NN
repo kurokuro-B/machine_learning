@@ -31,10 +31,6 @@ SENSORCOLS = ['acce_x', 'acce_y', 'acce_z',
         'gyro_x', 'gyro_y', 'gyro_z', 
         'ahrs_x', 'ahrs_y', 'ahrs_z']
 
-MAGNCOLS=['magn_x','magn_y','magn_z']
-
-NOT_MAGNCOLS=[s for s in SENSORCOLS if s not in MAGNCOLS]
-
 #configure NN
 def create_fun_model(features):
     c_num=features['cluster'].nunique()
@@ -154,7 +150,7 @@ submission_file=pd.concat(all_preds)
 
 submission_file.set_index('site_path_timestamp',inplace=True)
 submission_file = submission_file.reindex(index=ssubm['site_path_timestamp'])
-#(NNを学習する際、floorの値を修正しているので、元の値に戻す。)
+##(NNを学習する際、floorの値を修正しているので、元の値に戻す。)
 submission_file['floor']=ssubm['floor']
 
 submission_file=submission_file[['floor','x','y']]
