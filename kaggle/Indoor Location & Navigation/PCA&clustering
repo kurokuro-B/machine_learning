@@ -1,0 +1,95 @@
+#import
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import glob
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+
+import multiprocessing
+from multiprocessing import Pool
+
+import itertools
+from tqdm import tqdm
+
+import warnings
+warnings.filterwarnings('ignore')
+
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.max_rows', 100)
+pd.options.display.precision = 30
+np.set_printoptions(precision=20)
+np.set_printoptions(threshold=np.inf)
+num_cores = multiprocessing.cpu_count()
+
+#target_building(used_builing変数に、位置推定対象の建物のリストを格納）
+
+ssubm = pd.read_csv('../input/simple-99-accurate-floor-model/submission.csv')
+ssubm_df = ssubm["site_path_timestamp"].apply(lambda x: pd.Series(x.split("_")))
+ssubm_df.columns=['site','path','timestamp']
+ssubm_df['timestamp']=ssubm_df['timestamp'].astype(int)
+used_buildings = sorted(ssubm_df['site'].value_counts().index.tolist())
+
+#PCA&clustering（標準化したwifi特徴量のデータを読み込み、PCA後クラスタリングを実行）
+
+for building in used_buildings:
+    print(building)
+    train_data=pd.read_pickle(f'../input/wifi-features-with-timestamp-pkl/train/{building}_std_train.pkl')
+    tr_fe=train_data.iloc[:,:-5]
+
+    test_data=pd.read_pickle(f'../input/wifi-features-with-timestamp-pkl/test/{building}_std_test.pkl')
+    te_fe=test_data.iloc[:,:-1]
+
+    pca = PCA(n_components=250)
+    pca.fit(tr_fe)
+
+    pca_tr_fe=pca.transform(tr_fe)
+    pca_te_fe=pca.transform(te_fe)
+
+    pca_tr_fe=pd.DataFrame(pca_tr_fe)
+    pca_te_fe=pd.DataFrame(pca_te_fe)
+
+    train_data=pca_tr_fe.join(train_data.iloc[:,-5:])
+    test_data=pca_te_fe.join(test_data['site_path_timestamp']).merge(ssubm[['site_path_timestamp','floor']],how='inner',on='site_path_timestamp')
+
+    train_g=train_data.groupby('floor')
+    test_g=test_data.groupby('floor')
+
+    tr_results=[]
+    te_results=[]
+    for i,(tr,te) in enumerate(itertools.zip_longest(train_g,test_g)):
+        print(i)
+        km=KMeans(n_clusters=4,
+                 random_state=SEED)
+        km.fit(tr[1].iloc[:,:-5])
+
+        try:
+            tr_cl=km.predict(tr[1].iloc[:,:-5])
+            te_cl=km.predict(te[1].iloc[:,:-2])
+
+            tr[1]['cluster']=tr_cl+(i*4)
+            te[1]['cluster']=te_cl+(i*4)
+            tr_results.append(tr[1])
+            te_results.append(te[1])
+
+        except TypeError:
+            tr_cl=km.predict(tr[1].iloc[:,:-5])
+
+            tr[1]['cluster']=tr_cl+(i*4)
+            tr_results.append(tr[1])
+
+    train_data=pd.concat(tr_results)
+    test_data=pd.concat(te_results)
+
+
+    dir_train = Path(f'./train')
+    dir_train.mkdir(parents=True, exist_ok=True)
+    train_data.to_csv(os.path.join(dir_train,f'{building}_train.csv'),index=False)
+
+    dir_test = Path(f'./test')
+    dir_test.mkdir(parents=True, exist_ok=True)
+    test_data.to_csv(os.path.join(dir_test,f'{building}_test.csv'),index=False)
