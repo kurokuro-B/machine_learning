@@ -21,7 +21,7 @@ np.set_printoptions(precision=20)
 np.set_printoptions(threshold=np.inf)
 
 ---------------------------------------------------------------
-#target_building(used_builing変数に、位置推定対象の建物のリストを格納）
+#target_buildings (used_builings変数に、位置推定対象の建物のリストを格納）
 ---------------------------------------------------------------
 ssubm = pd.read_csv('../input/simple-99-accurate-floor-model/submission.csv')
 ssubm_df = ssubm["site_path_timestamp"].apply(lambda x: pd.Series(x.split("_")))
