@@ -88,12 +88,12 @@ for building in used_buildings:
     test_data['cluster']=test_data['cluster'].astype('category')
     test_data['floor']=test_data['floor']-test_data['floor'].min()
 
-    #trainデータ処理
-    features=train_data.drop(['x','y','path','timestamp',*SENSORCOLS],axis=1)
+    #train処理
+    features=train_data.drop(['x','y','path','timestamp'],axis=1)
     target_xy=train_data[['x','y']]
 
-    #testデータ処理
-    test_features=test_data.drop(['site_path_timestamp','site','path','timestamp',*SENSORCOLS],axis=1)
+    #test処理
+    test_features=test_data.drop('site_path_timestamp',axis=1)
 
     test_pred_x, test_pred_y = 0,0
     for fold,[trx,vax] in enumerate(kf.split(np.arange(len(features)),features['cluster'])):
