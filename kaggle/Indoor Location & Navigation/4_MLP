@@ -75,7 +75,6 @@ used_buildings = sorted(ssubm_df[0].value_counts().index.tolist())
 --------------------------
 kf = StratifiedKFold(n_splits=N_SPLITS,shuffle=True,random_state=SEED)
 
-
 --------------------------
 #prediction
 --------------------------
