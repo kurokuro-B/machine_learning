@@ -1,6 +1,5 @@
 #Indoor Location & Navigationコンペにて実際に作成したMLPのコードです。
-#別コードにて、数千次元あった特徴量を次元削除&クラスタリングし、新規にデータセットを作成。
-#本コードにて、作成したデータセットをMLPで学習しています。
+#PCA&clusteringファイルで作成したデータを、MLPで学習しています。
 
 
 #import
@@ -20,11 +19,6 @@ SEED = 42
 N_SPLITS = 8
 PCA_DIM=250
 early_stopping=EarlyStopping(patience=35)
-
-SENSORCOLS = ['acce_x', 'acce_y', 'acce_z', 
-        'magn_x', 'magn_y', 'magn_z',
-        'gyro_x', 'gyro_y', 'gyro_z', 
-        'ahrs_x', 'ahrs_y', 'ahrs_z']
 
 #configure NN
 def create_fun_model(features):
@@ -77,11 +71,11 @@ kf = StratifiedKFold(n_splits=N_SPLITS,shuffle=True,random_state=SEED)
 all_preds=[]
 for building in used_buildings:
     print(building)
-    train_data=pd.read_csv(f'../input/pca-cluster-wifi-sensor-datasets/{building}_ws_train.csv')
+    train_data=pd.read_csv(f'../input/wifi-with-pcacluster/train/{building}_train.csv')
     train_data['cluster']=train_data['cluster'].astype('category')
     train_data['floor']=train_data['floor']-train_data['floor'].min()
     
-    test_data=pd.read_csv(f'../input/pca-cluster-wifi-sensor-datasets/{building}_ws_test.csv')
+    test_data=pd.read_csv(f'../input/wifi-with-pcacluster/test/{building}_test.csv')
     test_data['cluster']=test_data['cluster'].astype('category')
     test_data['floor']=test_data['floor']-test_data['floor'].min()
 
@@ -134,7 +128,6 @@ for building in used_buildings:
 
     test_preds=pd.DataFrame()
     test_preds['site_path_timestamp']=test_data['site_path_timestamp']
-    test_preds['floor']=test_data['floor']
     test_preds['x']=test_pred_x
     test_preds['y']=test_pred_y
     
@@ -145,7 +138,6 @@ submission_file=pd.concat(all_preds)
 
 submission_file.set_index('site_path_timestamp',inplace=True)
 submission_file = submission_file.reindex(index=ssubm['site_path_timestamp'])
-##(NNを学習する際、floorの値を修正しているので、元の値に戻す。)
 submission_file['floor']=ssubm['floor']
 
 submission_file=submission_file[['floor','x','y']]
