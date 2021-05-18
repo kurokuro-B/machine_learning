@@ -22,7 +22,9 @@ N_SPLITS = 8
 PCA_DIM=250
 early_stopping=EarlyStopping(patience=35)
 
+--------------------------
 #configure NN
+--------------------------
 def create_fun_model(features):
     c_num=features['cluster'].nunique()
     f_num=features['floor'].max()+1
