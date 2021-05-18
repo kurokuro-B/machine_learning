@@ -1,5 +1,6 @@
+---------------------------------------------------------------
 #import
-
+---------------------------------------------------------------
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -26,16 +27,18 @@ np.set_printoptions(precision=20)
 np.set_printoptions(threshold=np.inf)
 num_cores = multiprocessing.cpu_count()
 
+---------------------------------------------------------------
 #target_building(used_builing変数に、位置推定対象の建物のリストを格納）
-
+---------------------------------------------------------------
 ssubm = pd.read_csv('../input/simple-99-accurate-floor-model/submission.csv')
 ssubm_df = ssubm["site_path_timestamp"].apply(lambda x: pd.Series(x.split("_")))
 ssubm_df.columns=['site','path','timestamp']
 ssubm_df['timestamp']=ssubm_df['timestamp'].astype(int)
 used_buildings = sorted(ssubm_df['site'].value_counts().index.tolist())
 
+---------------------------------------------------------------
 #PCA&clustering（標準化したwifi特徴量のデータを読み込み、PCA後クラスタリングを実行）
-
+---------------------------------------------------------------
 for building in used_buildings:
     print(building)
     train_data=pd.read_pickle(f'../input/wifi-features-with-timestamp-pkl/train/{building}_std_train.pkl')
