@@ -1,8 +1,9 @@
 #Indoor Location & Navigationコンペにて実際に作成したMLPのコードです。
 #PCA&clusteringファイルで作成したデータを、MLPで学習しています。
 
-
+--------------------------
 #import
+--------------------------
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
@@ -13,8 +14,9 @@ from tensorflow.keras.models import Model
 from keras.callbacks import EarlyStopping
 from tensorflow.keras.utils import plot_model
 
+--------------------------
 #set valiable
-
+--------------------------
 SEED = 42
 N_SPLITS = 8
 PCA_DIM=250
@@ -59,7 +61,9 @@ def create_fun_model(features):
     model.compile(optimizer='adam',loss='mse')
     return model
 
+--------------------------
 #target_buildings
+--------------------------
 ssubm = pd.read_csv('../input/simple-99-accurate-floor-model/submission.csv')
 ssubm_df = ssubm["site_path_timestamp"].apply(lambda x: pd.Series(x.split("_")))
 used_buildings = sorted(ssubm_df[0].value_counts().index.tolist())
@@ -67,7 +71,10 @@ used_buildings = sorted(ssubm_df[0].value_counts().index.tolist())
 #make a instance of StratifiedKFold
 kf = StratifiedKFold(n_splits=N_SPLITS,shuffle=True,random_state=SEED)
 
+
+--------------------------
 #prediction
+--------------------------
 all_preds=[]
 for building in used_buildings:
     print(building)
@@ -133,7 +140,9 @@ for building in used_buildings:
     
     all_preds.append(test_preds)
 
+--------------------------
 #make submission
+--------------------------
 submission_file=pd.concat(all_preds)
 
 submission_file.set_index('site_path_timestamp',inplace=True)
