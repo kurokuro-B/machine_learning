@@ -4,18 +4,12 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-import glob
-import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
-import multiprocessing
-from multiprocessing import Pool
-
 import itertools
-from tqdm import tqdm
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -25,7 +19,6 @@ pd.set_option('display.max_rows', 100)
 pd.options.display.precision = 30
 np.set_printoptions(precision=20)
 np.set_printoptions(threshold=np.inf)
-num_cores = multiprocessing.cpu_count()
 
 ---------------------------------------------------------------
 #target_building(used_builing変数に、位置推定対象の建物のリストを格納）
