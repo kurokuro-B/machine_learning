@@ -60,7 +60,7 @@ for search_word in SEARCH_WORDS:
     try:
       driver.find_element_by_xpath("/html/body/main/section/section/div/div/a").click()
     except: 
-      break
+      pass
 
     html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
