@@ -1,0 +1,136 @@
+#PRTIMESの記事をスクレイピングし、エクセルファイルに落とし込むコードです。
+#「https://qiita.com/shikumiya_hata/items/688dfc31bb107d6004c5」をベースにしています。
+
+#import
+#事前に「https://qiita.com/Chanmoro/items/9a3c86bb465c1cce738a」の方法２のやり方に従って、
+#WebDriverをインストールしてください。
+
+import chromedriver_binary
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+import datetime
+import time
+import requests
+import pandas as pd
+
+#############
+## 以下、実行前に変更する
+#############
+# いつからの分を取得するか指定する（開始日付 YYYY-MM-DD）
+START_DT_STR = '2020-12-01'
+# 検索キーワード
+SEARCH_WORDS= ['検索キーワード']
+#結果出力フォルダ 先頭にrをつけることで、「¥」をエスケープしています。
+FOLDER=r''
+############
+
+start_dt = datetime.datetime.strptime(START_DT_STR, '%Y-%m-%d')
+
+
+for search_word in SEARCH_WORDS:
+  print(search_word)
+  
+  #webdriveの設定
+  options = webdriver.ChromeOptions()
+  options.add_argument('--headless')
+
+  #webdriverを起動
+  driver = webdriver.Chrome('chromedriver',options=options)
+
+  #PR TIMESのトップページを開く
+  target_url = 'https://prtimes.jp/'   
+  driver.get(target_url)
+
+  #検索欄をクリックする   
+  driver.find_element_by_xpath("//header//input").click()
+  #検索バーにキーワードを入れ、クリックする
+  kensaku = driver.find_element_by_xpath("//header//input")
+  kensaku.send_keys(search_word)
+  kensaku.send_keys(Keys.ENTER)
+
+  cnt = 0
+  records=[]
+  while True:
+    #記事数を出力（進捗確認用）
+    print(len(driver.find_elements_by_xpath('/html/body/main/section/section/div/article')))
+
+    #もっとみるを押す
+    try:
+      driver.find_element_by_xpath("/html/body/main/section/section/div/div/a").click()
+    except: 
+      break
+
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+
+    #記事URLを取得(40件ずつ処理)
+    articles = soup.find_all(class_='list-article__link')[cnt*40:]
+
+    #終了フラグ
+    eof_flag = False
+
+    #記事ごとの情報を取得
+    for article in articles:
+      article_time = article.find(class_='list-article__time')
+      #print(article_time)
+
+      #記事公開日時をdatetime表記に変換
+      try:
+        str_to_dt = datetime.datetime.strptime(article_time.get('datetime'), '%Y-%m-%dT%H:%M:%S%z')
+      except:
+        try:
+          article_time_cvt = article_time.get('datetime').replace('+09:00', '+0900')
+          str_to_dt = datetime.datetime.strptime(article_time_cvt, '%Y-%m-%dT%H:%M:%S%z')
+        except:
+          str_to_dt = datetime.datetime.strptime(article_time.text, '%Y年%m月%d日 %H時%M分')
+      article_time_dt = datetime.datetime(str_to_dt.year, str_to_dt.month, str_to_dt.day, str_to_dt.hour, str_to_dt.minute)
+
+      #開始日付より前であれば終了（記事は最新日付の順でソートされているため）
+      if article_time_dt < start_dt:
+        eof_flag = True
+        break
+
+      relative_href = article["href"]
+      url = urljoin(target_url, relative_href)
+      #print(url)
+
+      
+      #2秒間待つ
+      time.sleep(2) 
+      
+      #URLを1記事ずつ開く
+      r = requests.get(url)
+      html = r.text
+      soup = BeautifulSoup(html, "html.parser")
+
+      #記事タイトル
+      title = soup.select_one("#main > div.content > article > div > header > h1").text
+      #記事サブタイトル
+      sub_title_elem = soup.select_one("#main > div.content > article > div > header > h2")
+      if sub_title_elem:
+        sub_title = sub_title_elem.text
+      else:
+        sub_title = ""
+
+      #会社名
+      company = soup.select_one("#main > div.content > article > div > header > div.information-release > div > a").text
+      #記事公開日
+      published = soup.select_one("#main > div.content > article > div > header > div.information-release > time").text
+
+      #配列に記事の情報を追加
+      records.append([url,title,sub_title,company,published])
+
+    #終了フラグがTrueになっている時はループを抜ける
+    if eof_flag:
+      break
+      
+    cnt += 1
+  article_frame=pd.DataFrame(records)
+  article_frame.rename(columns={0:'url',1:'タイトル',2:'サブタイトル',3:'会社',4:'掲載日'},inplace=True)
+  article_frame.to_excel(f'{FOLDER}/{search_word}_{START_DT_STR}.xlsx',index=False)
+  driver.quit()
+ 
+  
+
