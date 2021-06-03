@@ -127,6 +127,6 @@ for search_word in SEARCH_WORDS:
         time.sleep(2) 
     article_frame=pd.DataFrame(records)
     article_frame.rename(columns={0:'url',1:'タイトル',2:'サブタイトル',3:'会社',4:'掲載日'},inplace=True)
-    article_frame.to_excel(f'{FOLDER}/{search_word}_{START_DT_STR}.xlsx',index=False)
+    article_frame.to_csv(f'{FOLDER}/{search_word}_{START_DT_STR}.csv',index=False)
     driver.quit()
     
