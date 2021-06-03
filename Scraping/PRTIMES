@@ -48,30 +48,24 @@ for search_word in SEARCH_WORDS:
     kensaku.send_keys(search_word)
     kensaku.send_keys(Keys.ENTER)
     
-    cnt = 0
+    
+    #記事情報格納リスト
     records=[]
+    #終了フラグ
+    eof_flag = False
     while True:
         #記事数を出力（進捗確認用）
         print(len(driver.find_elements_by_xpath('/html/body/main/section/section/div/article')))
-
-        #もっとみるを押す
-        try:
-            driver.find_element_by_xpath("/html/body/main/section/section/div/div/a").click()
-        except: 
-            pass
+        
         html = driver.page_source
         soup = BeautifulSoup(html, "html.parser")
 
-        #記事URLを取得(40件ずつ処理)
-        articles = soup.find_all(class_='list-article__link')[cnt*40:]
-
-        #終了フラグ
-        eof_flag = False
+        #記事URLを取得
+        articles = soup.find_all(class_='list-article__link')
 
         #記事ごとの情報を取得
         for article in articles:
             article_time = article.find(class_='list-article__time')
-          #print(article_time)
 
           #記事公開日時をdatetime表記に変換
             try:
@@ -114,19 +108,25 @@ for search_word in SEARCH_WORDS:
             #記事公開日
             published = soup.select_one("#main > div.content > article > div > header > div.information-release > time").text
 
-              #配列に記事の情報を追加
+            #配列に記事の情報を追加
             records.append([url,title,sub_title,company,published])
 
         #終了フラグがTrueになっている時はループを抜ける
         if eof_flag:
             break
-      
-        cnt += 1
-        
+            
+        #もっとみるを押す。
+        try:
+            driver.find_element_by_xpath("/html/body/main/section/section/div/div/a").click()
+        #押せなかったらループを抜ける
+        except: 
+            break
+            
          #2秒間待つ
         time.sleep(2) 
+        
     article_frame=pd.DataFrame(records)
     article_frame.rename(columns={0:'url',1:'タイトル',2:'サブタイトル',3:'会社',4:'掲載日'},inplace=True)
     article_frame.to_csv(f'{FOLDER}/{search_word}_{START_DT_STR}.csv',index=False)
     driver.quit()
-    
+        
