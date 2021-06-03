@@ -71,7 +71,7 @@ for search_word in SEARCH_WORDS:
             article_time = article.find(class_='list-article__time')
           #print(article_time)
 
-          #記事公開日時をdatetime表記に変換
+          　　　　#記事公開日時をdatetime表記に変換
             try:
                 str_to_dt = datetime.datetime.strptime(article_time.get('datetime'), '%Y-%m-%dT%H:%M:%S%z')
             except:
@@ -82,7 +82,7 @@ for search_word in SEARCH_WORDS:
                     str_to_dt = datetime.datetime.strptime(article_time.text, '%Y年%m月%d日 %H時%M分')
             article_time_dt = datetime.datetime(str_to_dt.year, str_to_dt.month, str_to_dt.day, str_to_dt.hour, str_to_dt.minute)
 
-          #開始日付より前であれば終了（記事は最新日付の順でソートされているため）
+          　　　　#開始日付より前であれば終了（記事は最新日付の順でソートされているため）
             if article_time_dt < start_dt:
                 eof_flag = True
                 break
@@ -92,7 +92,7 @@ for search_word in SEARCH_WORDS:
             #print(url)
 
       
-              #2秒間待つ
+            #2秒間待つ
             time.sleep(2) 
             
             #URLを1記事ずつ開く
