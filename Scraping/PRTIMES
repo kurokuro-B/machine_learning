@@ -17,13 +17,13 @@ import pandas as pd
 START_DT_STR = '2021-03-01'
 
 # 検索キーワード（複数選択する場合は、配列に複数文字列を指定してください。）
-SEARCH_WORDS= ['新型コロナウイルス関連サービス']
+SEARCH_WORDS= ['XXXXX']
 
 #chrome_webdriverのパス
-chrome_webdriver_path='/Users/ogawahiroki/DataScience/chrome-driver'
+chrome_webdriver_path='/Users/XXXX/XXXX/chromedriver'
 
 #結果出力フォルダ 
-FOLDER='/Users/ogawahiroki/DataScience'
+FOLDER='/Users/XXXX/XXXX'
 ################
 
 start_dt = datetime.datetime.strptime(START_DT_STR, '%Y-%m-%d')
