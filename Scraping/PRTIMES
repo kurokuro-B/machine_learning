@@ -1,4 +1,4 @@
-#PRTIMESの記事をスクレイピングし、エクセルファイルに落とし込むコードです。
+#PRTIMESの記事をスクレイピングし、csvファイルに落とし込むコードです。
 #MACを想定しています。
 #「https://qiita.com/shikumiya_hata/items/688dfc31bb107d6004c5」をベースにしています。
 #事前にchromeのバージョンに対応するwebdriverをダウンロードしてください
