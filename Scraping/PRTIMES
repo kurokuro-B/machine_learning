@@ -1,7 +1,7 @@
 #PRTIMESの記事をスクレイピングし、csvファイルに落とし込むコードです。
 #MACを想定しています。
-#「https://qiita.com/shikumiya_hata/items/688dfc31bb107d6004c5」をベースにしており、
-#①複数検索語句に対応②CSV出力の２点の機能を追加しております。
+#「https://qiita.com/shikumiya_hata/items/688dfc31bb107d6004c5」をベースに、
+#①複数検索語句指定②CSV出力ができるようにしております。
 #事前にchromeのバージョンに対応するwebdriverをダウンロードしてください
 
 from selenium import webdriver
