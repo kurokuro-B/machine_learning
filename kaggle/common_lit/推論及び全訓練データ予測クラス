@@ -1,0 +1,86 @@
+
+
+
+class CheckModel():
+"""
+checkmodelクラス。pytorchで、学習済モデルを使用してテストデータ及び訓練データの予測を行いたい時に使用。
+
+train_df:訓練用データ
+test_df:推論用データ
+model:NNmodel
+model_dir:modelのパラメータが保存されているフォルダ
+batch_size:バッチサイズ 
+"""
+
+    def __init__(self,train_df,test_df,model,model_dir,batch_size=4):
+        """
+        num_models:パラメータの数。基本的には、Fold数と一致
+        device:使用デバイス。基本'cuda'を想定,
+        predict=None
+        """
+        
+        self.train_df=train_df
+        self.train_DataSet= LitDataset(train_df, inference_only=True)
+        self.train_DataLoader=DataLoader(self.train_DataSet, batch_size=batch_size,
+                                         drop_last=False, shuffle=False, num_workers=2)
+        self.test_df=test_df
+        self.test_DataSet= LitDataset(test_df, inference_only=True)
+        self.test_DataLoader=DataLoader(self.test_DataSet, batch_size=batch_size,
+                                         drop_last=False, shuffle=False, num_workers=2)
+        
+        self.model=model
+        self.model_dir=model_dir
+    
+            
+    def varidation(self,num_models=5,device='cuda',predict=None):
+        valid_predictions =np.zeros((num_models, len(self.train_df)))
+
+        for model_index in range(num_models):          
+            model_path = f"{self.model_dir}/model_{model_index + 1}.pth"
+            print(f"\nUsing {model_path}")
+            
+            model=self.model
+            model.load_state_dict(torch.load(model_path, map_location=DEVICE))    
+            model.to(DEVICE)
+
+            valid_predictions[model_index] = predict(model, self.train_DataLoader)
+        valid_predictions=valid_predictions.mean(axis=0)
+        return valid_predictions
+    
+        
+    def inference(self,num_models=5,device='cuda',predict=None):
+        
+        model_predictions = np.zeros((num_models, len(self.test_df)))
+        for model_index in range(num_models):            
+            model_path = f"{self.model_dir}/model_{model_index + 1}.pth"
+            print(f"\nUsing {model_path}")
+        
+            model=self.model
+            model.load_state_dict(torch.load(model_path, map_location=device))    
+            model.to(DEVICE)
+
+            model_predictions[model_index] = predict(model, self.test_DataLoader)
+            
+        model_predictions=model_predictions.mean(axis=0)
+        return model_predictions
+        
+#predict関数のサンプル      
+def predict(model, data_loader):
+    """Returns an np.array with predictions of the |model| on |data_loader|"""
+    model.eval()
+
+    result = np.zeros(len(data_loader.dataset))    
+    index = 0
+    
+    with torch.no_grad():
+        for batch_num, (input_ids, attention_mask) in enumerate(data_loader):
+            input_ids = input_ids.to(DEVICE)
+            attention_mask = attention_mask.to(DEVICE)
+                        
+            pred = model(input_ids, attention_mask)                        
+
+            result[index : index + pred.shape[0]] = pred.flatten().to("cpu")
+            index += pred.shape[0]
+
+    return result
+
