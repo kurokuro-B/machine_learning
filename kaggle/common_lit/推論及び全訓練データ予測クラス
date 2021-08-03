@@ -1,6 +1,3 @@
-
-
-
 class CheckModel():
 """
 checkmodelクラス。pytorchで、学習済モデルを使用してテストデータ及び訓練データの予測を行いたい時に使用。
