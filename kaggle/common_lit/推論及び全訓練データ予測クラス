@@ -60,6 +60,7 @@ batch_size:バッチサイズ
             
         model_predictions=model_predictions.mean(axis=0)
         return model_predictions
+
         
 #predict関数のサンプル      
 def predict(model, data_loader):
