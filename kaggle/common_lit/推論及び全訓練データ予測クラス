@@ -11,9 +11,9 @@ batch_size:バッチサイズ
 
     def __init__(self,train_df,test_df,model,model_dir,batch_size=4):
         """
-        num_models:パラメータの数。基本的には、Fold数と一致
+        num_models:モデル(パラメータ)の数。基本的には、Fold数と一致
         device:使用デバイス。基本'cuda'を想定,
-        predict=None
+        predict=予測に用いる関数
         """
         
         self.train_df=train_df
