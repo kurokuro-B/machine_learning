@@ -1,19 +1,15 @@
+
+#checkmodelクラス。pytorchにて、学習済モデルを使用してテストデータ及び訓練データの予測を行いたい時に使用。本コンペではアンサンブルで色々なモデルを使用することが多かったため作成。
+
 class CheckModel():
-"""
-checkmodelクラス。pytorchで、学習済モデルを使用してテストデータ及び訓練データの予測を行いたい時に使用。
-
-train_df:訓練用データ
-test_df:推論用データ
-model:NNmodel
-model_dir:modelのパラメータが保存されているフォルダ
-batch_size:バッチサイズ 
-"""
-
     def __init__(self,train_df,test_df,model,model_dir,batch_size=4):
+        
         """
-        num_models:モデル(パラメータ)の数。基本的には、Fold数と一致
-        device:使用デバイス。基本'cuda'を想定,
-        predict=予測に用いる関数
+        train_df:訓練用データ
+        test_df:推論用データ
+        model:NNmodel
+        model_dir:modelのパラメータが保存されているフォルダ
+        batch_size:バッチサイズ 
         """
         
         self.train_df=train_df
@@ -30,8 +26,14 @@ batch_size:バッチサイズ
     
             
     def varidation(self,num_models=5,device='cuda',predict=None):
+    
+        """
+        num_models:モデル(パラメータ)の数。基本的には、Fold数と一致
+        device:使用デバイス。基本'cuda'を想定,
+        predict=予測に用いる関数
+        """
+        
         valid_predictions =np.zeros((num_models, len(self.train_df)))
-
         for model_index in range(num_models):          
             model_path = f"{self.model_dir}/model_{model_index + 1}.pth"
             print(f"\nUsing {model_path}")
@@ -46,6 +48,12 @@ batch_size:バッチサイズ
     
         
     def inference(self,num_models=5,device='cuda',predict=None):
+    
+        """
+        num_models:モデル(パラメータ)の数。基本的には、Fold数と一致
+        device:使用デバイス。基本'cuda'を想定,
+        predict=予測に用いる関数
+        """
         
         model_predictions = np.zeros((num_models, len(self.test_df)))
         for model_index in range(num_models):            
