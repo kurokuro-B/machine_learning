@@ -2,10 +2,9 @@
 #checkmodelクラス。pytorchにて、学習済モデルを使用してテストデータの予測を行いたい時に使用。本コンペではアンサンブルで色々なモデルを使用することが多かったため作成。
 
 class CheckModel():
-    def __init__(self,train_df,test_df,model,model_dir,batch_size=4):
+    def __init__(self,test_df,model,model_dir,batch_size=4):
         
         """
-        train_df:訓練用データ
         test_df:推論用データ
         model:NNmodel
         model_dir:modelのパラメータが保存されているフォルダ
